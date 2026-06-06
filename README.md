@@ -1,5 +1,5 @@
 # AgroNexis-
-Aplicación móvil agrícola con arquitectura offline-firts como proyecto productivo SENA.
+Aplicación móvil agrícola con arquitectura offline-first como proyecto productivo SENA.
 
 ## Objetivo
 Ayudar a los agricultores a gestionar sus cultivos, actividades, mano de obra y finanzas sin necesidad de conexión a internet.
