@@ -26,7 +26,7 @@ export default function LoginScreen() {
       setPin(['', '', '', '']);
       return;
     }
-    router.replace('/'); // RUTA TEMPORAL: Debera ir a cultivos.
+    router.replace('/(app)/cultivos'); 
   }
 
   return (

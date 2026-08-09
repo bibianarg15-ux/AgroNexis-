@@ -38,20 +38,18 @@ export default function RootLayout() {
       });
   }, [dbReady]);
 
-  // Paso 3: una vez sabemos si existe usuario, navegar a la pantalla correcta
-  useEffect(() => {
-    if (usuarioExiste === null) return;
+useEffect(() => {
+  if (usuarioExiste === null) return;
 
-    const enGrupoAuth = segments[0] === '(auth)';
+  const enGrupoAuth = segments[0] === '(auth)';
 
-    if (usuarioExiste && enGrupoAuth) {
-      // Ya existe usuario pero está en pantallas de auth: mándalo a login
-      router.replace('/(auth)/login');
-    } else if (!usuarioExiste && !enGrupoAuth) {
-      // No existe usuario y no está en auth: mándalo a registro
-      router.replace('/(auth)/registro');
-    }
-  }, [usuarioExiste, segments]);
+  if (usuarioExiste && enGrupoAuth) {
+    router.replace('/(app)/cultivos');
+  } else if (!usuarioExiste && !enGrupoAuth) {
+    router.replace('/(auth)/registro');
+  }
+}, [usuarioExiste, segments]);
+ 
 
   if (dbError) {
     return (
@@ -71,3 +69,4 @@ export default function RootLayout() {
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
+
