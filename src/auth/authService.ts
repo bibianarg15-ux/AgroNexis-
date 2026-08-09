@@ -27,12 +27,13 @@ export async function verificarUsuarioExistente(): Promise<boolean> {
     return await existeUsuario();
 }
 
-//Registra al usuario 
+
 export async function registrarAgricultor(datos: RegistroInput): Promise<RegistroResultado> {
   const yaExiste = await existeUsuario();
   if (yaExiste) {
     return { exito: false, error: 'Ya existe un usuario registrado en este dispositivo.' };
 }
+
 //Valida los campos obligatorios
   if (!datos.nombreCompleto.trim()) {
     return { exito: false, error: 'El nombre completo es obligatorio.' };

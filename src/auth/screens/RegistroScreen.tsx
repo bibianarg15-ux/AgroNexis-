@@ -35,12 +35,16 @@ export default function RegistroScreen() {
     });
 
     setCargando(false);
+    console.log('Resultado:', resultado);
+
+
+console.log('Voy a navegar a Cultivos...');
 
     if (!resultado.exito) {
       Alert.alert('Error', resultado.error ?? 'No se pudo crear la cuenta.');
       return;
     }
-    router.replace('/login');
+    router.replace('/(app)/cultivos'); 
   }
 
   return (
