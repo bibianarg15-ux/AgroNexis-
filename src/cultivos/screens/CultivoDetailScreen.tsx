@@ -73,6 +73,12 @@ const [actividades, setActividades] = useState<Actividad[]>([]);
     router.push(`/actividades/cultivo/${cultivo.id}`);
     return;
   }
+
+  if(tipo === 'mano-obra') {
+    router.push(`/mano-obra/cultivo/${cultivo.id}`);
+    return;
+  }
+
   Alert.alert(`El registro de ${tipo} estará disponible pronto.`);
 }
 
