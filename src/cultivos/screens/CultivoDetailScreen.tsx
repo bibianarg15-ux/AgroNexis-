@@ -1,4 +1,5 @@
 import { Actividad, listarActividadesPorCultivo } from '@/actividades/actividadesRepository';
+import { BalanceCultivo, calcularBalanceCultivo } from '@/finanzas/finanzasService';
 import ScreenHeader from '@/shared/components/ScreenHeader';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -20,6 +21,7 @@ const { id } = useLocalSearchParams<{ id: string }>();
 const [cultivo, setCultivo] = useState <Cultivo | null>(null);
 const [cargando, setCargando] = useState(true);
 const [actividades, setActividades] = useState<Actividad[]>([]);
+const [balance, setBalance] = useState<BalanceCultivo | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -35,12 +37,17 @@ const [actividades, setActividades] = useState<Actividad[]>([]);
 
   useFocusEffect(
   useCallback(() => {
-    async function cargarActividades() {
-      const resultado = await listarActividadesPorCultivo(id);
-      setActividades(resultado);
+    async function cargarDatos() {
+      const [actividades, resultadoBalance] = await Promise.all([
+        listarActividadesPorCultivo(id),
+        calcularBalanceCultivo(id),
+      ]);
+
+      setActividades(actividades);
+      setBalance(resultadoBalance);
     }
 
-    cargarActividades();
+    cargarDatos();
   }, [id])
 );
 
@@ -79,8 +86,12 @@ const [actividades, setActividades] = useState<Actividad[]>([]);
     return;
   }
 
-  Alert.alert(`El registro de ${tipo} estará disponible pronto.`);
-}
+  if(tipo === 'finanzas') {
+    router.push(`/finanzas/cultivo/${cultivo.id}`);
+    return;
+  }
+  }
+
 
   if (cargando || !cultivo) {
     return (
@@ -104,7 +115,7 @@ const [actividades, setActividades] = useState<Actividad[]>([]);
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Balance:</Text>
-          <Text style={styles.statValor}>—</Text>
+          <Text style={styles.statValor}>{balance?.balance.toLocaleString('es-CO') ?? 0}</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Actividades:</Text>

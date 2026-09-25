@@ -119,3 +119,13 @@ export async function eliminarJornal(id: string): Promise<void> {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM MANO_OBRA WHERE id = ?;', [id]);
 }
+
+// Listar jornales por cultivo 
+export async function sumarJornalesPorCultivo(cultivoId: string): Promise<number> {
+  const db = await getDatabase();
+  const resultado = await db.getFirstAsync<{ total: number }>(
+    `SELECT COALESCE(SUM(valor_jornal), 0) as total FROM MANO_OBRA WHERE cultivo_id = ?;`,
+    [cultivoId]
+  );
+  return resultado?.total || 0;
+}
