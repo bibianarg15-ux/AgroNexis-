@@ -1,5 +1,5 @@
 import { Cultivo } from '@/cultivos/cultivosRepository';
-import { listarCultivosDelUsuario } from '@/cultivos/cultivosService';
+import { listarCultivosDelUsuario, obtenerCultivo } from '@/cultivos/cultivosService';
 import { sumarJornalesPorCultivo } from '@/mano_obra/manoObraRepository';
 import { actualizarFinanza, crearFinanza, CrearFinanzaInput, eliminarFinanza, Finanza, listarFinanzasPorCultivo, obtenerFinanzaPorId, sumarIngresosYEgresos } from './finanzasRepository';
 
@@ -82,6 +82,11 @@ export async function registrarFinanza(datos: FinanzaFormInput): Promise<Finanza
     return { exito: false, error: 'La fecha del movimiento no puede ser posterior a la fecha actual' };
   };
 
+  const cultivo = await obtenerCultivo(datos.cultivoId);
+  if(cultivo && fecha < cultivo.fecha_siembra){
+    return { exito: false, error: 'La fecha del movimiento no puede ser anterior a la fecha de siembra del cultivo' };
+  }
+  
   const input: CrearFinanzaInput = {
     cultivoId: datos.cultivoId,
     tipo: datos.tipo,

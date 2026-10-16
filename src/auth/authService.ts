@@ -1,6 +1,5 @@
 import { verifyHash } from "@/shared/utils/crypto";
-import { crearUsuario, existeUsuario, obtenerUsuario, Usuario } from "./authRepository";
-
+import { actualizarPin, crearUsuario, existeUsuario, obtenerUsuario, Usuario, verificarDatosRecuperacion } from "./authRepository";
 export interface RegistroInput {
     nombreCompleto: string;
     municipio: string;
@@ -22,6 +21,16 @@ export interface LoginResultado {
     usuario?:Usuario;
 }
 
+export interface RecuperacionInput {
+  nombreCompleto: string;
+  municipio: string;
+  fechaNacimiento: string;
+}
+
+export interface RecuperacionResultado {
+  exito: boolean;
+  error?: string;
+}
 //verifica si hay un usuario registrado
 export async function verificarUsuarioExistente(): Promise<boolean> {
     return await existeUsuario();
@@ -77,4 +86,30 @@ export async function iniciarSesion(pin: string): Promise<LoginResultado> {
   }
 
   return { exito: true, usuario };
+}
+//Verifica identidad
+export async function verificarIdentidadRecuperacion(datos:RecuperacionInput):Promise<RecuperacionResultado>{
+  if(!datos.nombreCompleto.trim() || !datos.municipio || !datos.fechaNacimiento.trim()){
+    return {exito:false, error:"Completa todos los campos."};
+  }
+  const coincide= await verificarDatosRecuperacion(datos)
+
+  if(!coincide){
+    return {exito:false, error:"Los datos no coinciden con tu registro"}
+  }
+   return {exito:true}
+}
+
+//Nuevo PIN
+export async function establecerNuevoPin(pin: string, confirmarPin:string): Promise<RecuperacionResultado> {
+const pinValido = /^\d{4}$/.test(pin);
+if(!pinValido){
+  return {exito: false, error:"El PIN debe tener exactamente 4 dígitos"}
+}
+if(pin !== confirmarPin){
+  return {exito:false, error:'Los PIN no coinciden.'};
+}
+
+await actualizarPin(pin);
+return {exito: true};
 }

@@ -1,23 +1,17 @@
 import { Cultivo } from '@/cultivos/cultivosRepository';
 import { listarCultivosDelUsuario, obtenerCultivo } from '@/cultivos/cultivosService';
+import DateInput from '@/shared/components/DateInput';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { registrarActividad } from '../actividadesService';
 
 export default function NuevaActividadScreen() {
   const router = useRouter();
   const { cultivoId: cultivoIdParam } = useLocalSearchParams<{ cultivoId?: string }>();
+  const {mostrarAdvertencia, mostrarError,mostrarExito} = useFeedback();
 
   const [cultivoSeleccionado, setCultivoSeleccionado] = useState<Cultivo | null>(null);
   const [cultivosDisponibles, setCultivosDisponibles] = useState<Cultivo[]>([]);
@@ -47,9 +41,11 @@ export default function NuevaActividadScreen() {
 
   async function handleGuardar() {
     if (!cultivoSeleccionado) {
-      Alert.alert('Error', 'Elige un cultivo antes de guardar.');
+      mostrarAdvertencia('Elige un cultivo antes de guardar.');
       return;
     }
+
+    mostrarExito('Actividad guardada')
 
     setCargando(true);
 
@@ -69,7 +65,7 @@ export default function NuevaActividadScreen() {
     setCargando(false);
 
     if (!resultado.exito) {
-      Alert.alert('Error', resultado.error ?? 'No se pudo guardar la actividad.');
+      mostrarError(resultado.error ?? 'No se pudo guardar la actividad.');
       return;
     }
 
@@ -141,11 +137,9 @@ export default function NuevaActividadScreen() {
             />
 
            <Text style={styles.label}>Fecha</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="AAAA-MM-DD"
+        <DateInput
           value={fecha}
-          onChangeText={setFecha}
+          onChange={setFecha}
           editable={!cargando}
         />
  
@@ -153,13 +147,13 @@ export default function NuevaActividadScreen() {
         ) : (
           <>
           <Text style={styles.label}>Fecha</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="AAAA-MM-DD"
+        <DateInput
           value={fecha}
-          onChangeText={setFecha}
-          editable={!cargando}/>
-          
+          onChange={setFecha}
+          editable={!cargando}
+          minimumDate={cultivoSeleccionado?.fecha_siembra ? new Date(cultivoSeleccionado.fecha_siembra) : undefined}
+        />
+
             <Text style={styles.label}>Cantidad por categoría</Text>
             <Text style={styles.label}>{cultivoSeleccionado?.categoria_1 ?? 'Primera'}</Text>
             <TextInput

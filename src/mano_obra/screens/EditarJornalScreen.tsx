@@ -1,21 +1,16 @@
+import DateInput from '@/shared/components/DateInput';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { obtenerJornalPorId } from '../manoObraRepository';
 import { editarJornal } from '../manoObraService';
 
 export default function EditarJornalScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const {mostrarError, mostrarExito} = useFeedback();
 
   const [fecha, setFecha] = useState('');
   const [valorJornal, setValorJornal] = useState('');
@@ -52,9 +47,11 @@ export default function EditarJornalScreen() {
     setGuardando(false);
 
     if (!resultado.exito) {
-      Alert.alert('Error', resultado.error ?? 'No se pudo actualizar el jornal.');
+      mostrarError(resultado.error ?? 'No se pudo actualizar el jornal.');
       return;
     }
+
+    mostrarExito('Jornal acualizado')
 
     router.back();
   }
@@ -74,12 +71,11 @@ export default function EditarJornalScreen() {
       <View style={styles.contenido}>
 
         <Text style={styles.label}>Fecha</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="AAAA-MM-DD"
+        <DateInput
           value={fecha}
-          onChangeText={setFecha}
+          onChange={setFecha}
           editable={!guardando}
+          maximumDate={new Date()}
         />
 
         <Text style={styles.label}>Valor del jornal</Text>

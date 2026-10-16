@@ -7,6 +7,7 @@ import {
   Image,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -19,6 +20,7 @@ export default function CultivosListScreen() {
   const [cultivos, setCultivos] = useState<Cultivo[]>([]);
   const [nombreUsuario, setNombreUsuario] = useState("");
   const [cargando, setCargando] = useState(true);
+  const [busqueda, setBusqueda] = useState("");
 
   useFocusEffect(
     useCallback(() => {
@@ -48,15 +50,27 @@ export default function CultivosListScreen() {
     router.push("/cultivos/nuevo");
   }
 
+  const cultivosFiltrados = cultivos.filter((c) =>
+    c.nombre.toLowerCase().includes(busqueda.toLowerCase())
+);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.saludo}>AgroNexis</Text>
-
         <TouchableOpacity onPress={irANuevoCultivo}>
           <Text style={styles.botonAgregar}>+</Text>
         </TouchableOpacity>
       </View>
+
+       <View style={styles.buscadorContainer}>
+          <TextInput
+            placeholder="Buscar cultivo"
+            value={busqueda}
+            onChangeText={setBusqueda}
+            style={styles.buscador}
+          />
+        </View>
       {!cargando && cultivos.length === 0 ? (
         <View style={styles.vacioContainer}>
           <Image
@@ -64,7 +78,6 @@ export default function CultivosListScreen() {
             style={styles.logoVacio}
             resizeMode="contain"
           />
-
           <Text style={styles.vacioTitulo}>
             ¡Aún no tienes cultivos registrados!
           </Text>
@@ -84,7 +97,7 @@ export default function CultivosListScreen() {
         </View>
       ) : (
         <FlatList
-          data={cultivos}
+          data={cultivosFiltrados}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.lista}
           renderItem={({ item }) => (
@@ -145,7 +158,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F3F7F0",
   },
-
+  buscadorContainer: { padding: 16, paddingBottom: 8 },
+  buscador: {
+    borderWidth: 0.5,
+    borderColor: '#9CA3AF',
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#fff',
+    fontSize: 15,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",

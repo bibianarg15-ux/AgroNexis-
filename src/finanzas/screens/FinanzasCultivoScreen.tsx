@@ -1,19 +1,14 @@
 import { Cultivo } from '@/cultivos/cultivosRepository';
 import { obtenerCultivo } from '@/cultivos/cultivosService';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowDownIcon, ArrowUpIcon, DotsThreeVerticalIcon } from 'phosphor-react-native';
 import { useCallback, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Finanza } from '../finanzasRepository';
 import { borrarFinanza, obtenerFinanzasDelCultivo } from '../finanzasService';
+
 
 export default function FinanzasCultivoScreen() {
   const router = useRouter();
@@ -26,6 +21,9 @@ export default function FinanzasCultivoScreen() {
   const [balance, setBalance] = useState(0);
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState<'todo' | 'ingreso' | 'egreso'>('todo');
+  const { confirmar, mostrarExito} = useFeedback();
 
   useFocusEffect(
   useCallback(() => {
@@ -34,6 +32,12 @@ export default function FinanzasCultivoScreen() {
     }
   }, [cultivoId])
 ); 
+
+const movimientosFiltrados = movimientos.filter((m) => {
+      const coincideTipo = filtroTipo === 'todo' || m.tipo === filtroTipo;
+      const coincideBusqueda = m.descripcion.toLowerCase().includes(busqueda.toLowerCase());
+      return coincideTipo && coincideBusqueda;
+    });
 
 async function cargar() {
   if (!cultivoId) {
@@ -71,20 +75,20 @@ async function cargar() {
     router.push(`/finanzas/${id}/editar`);
   }
 
-  function handleEliminar(id: string) {
+  async function handleEliminar(id: string) {
     setMenuAbierto(null);
-    Alert.alert('Eliminar movimiento', '¿Seguro que quieres eliminarlo?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
+    const confirmado = await confirmar({
+      titulo: 'Eliminar movimiento',
+      mensaje: '¿Seguro que quieres eliminarlo?',
+      textoConfirmar: 'Eliminar',
+      destructivo: true
+    });
+
+    if(!confirmado) return; 
           await borrarFinanza(id);
+          mostrarExito('Movimiento eliminado');
           cargar();
-        },
-      },
-    ]);
-  }
+        }
 
   return (
     <View style={styles.container}>
@@ -118,6 +122,41 @@ async function cargar() {
         </Text>
       </View>
 
+      <View style ={ styles.buscadorContainer}>
+      <TextInput 
+      style = { styles.buscador}
+      placeholder="Buscar movimientos..."
+      value={busqueda}
+      onChangeText={setBusqueda}
+    />
+    </View>
+    <View style = { styles.filtrosContainer}>
+      <TouchableOpacity
+        style={[styles.filtroBoton, filtroTipo === 'todo' && styles.filtroBotonActivo]}
+        onPress={() => setFiltroTipo('todo')}
+      >
+        <Text style={[styles.filtroTexto, filtroTipo === 'todo' && styles.filtroTextoActivo]}>
+          Todos
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.filtroBoton, filtroTipo === 'ingreso' && styles.filtroBotonActivo]}
+        onPress={() => setFiltroTipo('ingreso')}
+      >
+        <Text style={[styles.filtroTexto, filtroTipo === 'ingreso' && styles.filtroTextoActivo]}>
+          Ingresos
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.filtroBoton, filtroTipo === 'egreso' && styles.filtroBotonActivo]}
+        onPress={() => setFiltroTipo('egreso')}
+      >
+        <Text style={[styles.filtroTexto, filtroTipo === 'egreso' && styles.filtroTextoActivo]}>
+          Egresos
+        </Text>
+      </TouchableOpacity>
+    </View>
+
       {!cargando && movimientos.length === 0 ? (
         <View style={styles.vacioContainer}>
           <Text style={styles.vacioTitulo}>Aún no tienes movimientos registrados</Text>
@@ -128,7 +167,7 @@ async function cargar() {
       ) : (
         <>
           <FlatList
-            data={movimientos}
+            data={movimientosFiltrados}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.lista}
             renderItem={({ item }) => (
@@ -200,4 +239,27 @@ const styles = StyleSheet.create({
   menu: { marginTop: 10, borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 8 },
   menuItem: { paddingVertical: 8 },
   menuItemTexto: { fontSize: 14, color: '#000000' },
+
+  buscadorContainer: { paddingHorizontal: 16, marginBottom: 10 },
+buscador: {
+  borderWidth: 0.5,
+  borderColor: '#9CA3AF',
+  borderRadius: 8,
+  padding: 12,
+  backgroundColor: '#fff',
+  fontSize: 15,
+},
+filtrosContainer: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 10 },
+filtroBoton: {
+  flex: 1,
+  borderWidth: 1,
+  borderColor: '#9CA3AF',
+  borderRadius: 8,
+  padding: 8,
+  alignItems: 'center',
+},
+filtroBotonActivo: { backgroundColor: '#1A501A', borderColor: '#1A501A' },
+filtroTexto: { fontSize: 13, color: '#333' },
+filtroTextoActivo: { color: '#fff', fontWeight: '600' },
+
 });

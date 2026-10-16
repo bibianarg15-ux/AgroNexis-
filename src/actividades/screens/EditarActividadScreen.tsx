@@ -1,23 +1,17 @@
 import { Cultivo } from '@/cultivos/cultivosRepository';
 import { obtenerCultivo } from '@/cultivos/cultivosService';
+import DateInput from '@/shared/components/DateInput';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { editarActividad, obtenerActividadConCosecha } from '../actividadesService';
 
 export default function EditarActividadScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const {mostrarError, mostrarExito} = useFeedback();
 
   const [cultivo, setCultivo] = useState<Cultivo | null>(null);
   const [esCosecha, setEsCosecha] = useState(false);
@@ -31,6 +25,7 @@ export default function EditarActividadScreen() {
   const [cantidad3, setCantidad3] = useState('');
   const [cargandoDatos, setCargandoDatos] = useState(true);
   const [guardando, setGuardando] = useState(false);
+
 
   useFocusEffect(
     useCallback(() => {
@@ -78,9 +73,11 @@ export default function EditarActividadScreen() {
     setGuardando(false);
 
     if (!resultado.exito) {
-      Alert.alert('Error', resultado.error ?? 'No se pudo actualizar la actividad.');
+      mostrarError( resultado.error ?? 'No se pudo actualizar la actividad.');
       return;
     }
+
+    mostrarExito('Cultivo actualizado')
 
     router.back();
   }
@@ -104,17 +101,13 @@ export default function EditarActividadScreen() {
         </View>
 
         <Text style={styles.label}>Fecha</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="AAAA-MM-DD"
+        <DateInput
           value={fecha}
-          onChangeText={setFecha}
+          onChange={setFecha}
           editable={!guardando}
+          minimumDate={
+            cultivo?.fecha_siembra ? new Date(cultivo.fecha_siembra): undefined}
         />
-
-        {/* El tipo (Cosecha/Otra) no se puede cambiar al editar,
-            porque cambiaría la estructura de datos asociada
-            (crear/eliminar el registro de cosecha) */}
         {!esCosecha ? (
           <>
             <Text style={styles.label}>Actividad</Text>

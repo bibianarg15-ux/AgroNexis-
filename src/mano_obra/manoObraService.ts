@@ -1,4 +1,5 @@
 import { obtenerUsuario } from '@/auth/authRepository';
+import { obtenerCultivo } from '@/cultivos/cultivosService';
 import { formatearRangoSemana, obtenerRangoSemana } from '@/shared/utils/fechas';
 import {
   actualizarJornal,
@@ -126,6 +127,11 @@ export async function registrarJornal(datos: JornalFormInput): Promise<JornalRes
 
  const fecha= datos.fecha ?? Date.now();
 
+ const cultivo = await obtenerCultivo(datos.cultivoId);
+  if (cultivo && fecha < cultivo.fecha_siembra) {
+    return { exito: false, error: 'La fecha no puede ser anterior a la fecha de siembra del cultivo.' };
+  }
+  
   if (!datos.valorJornal || datos.valorJornal <= 0) {
     return { exito: false, error: 'El valor del jornal debe ser mayor a cero.' };
   }

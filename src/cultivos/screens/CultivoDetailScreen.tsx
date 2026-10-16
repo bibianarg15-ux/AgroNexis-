@@ -1,21 +1,16 @@
 import { Actividad, listarActividadesPorCultivo } from '@/actividades/actividadesRepository';
 import { BalanceCultivo, calcularBalanceCultivo } from '@/finanzas/finanzasService';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Cultivo } from '../cultivosRepository';
 import { borrarCultivo, obtenerCultivo } from '../cultivosService';
 
 export default function CultivoDetailScreen() {
 const router = useRouter();
+const {confirmar, mostrarExito} = useFeedback();
 
 const { id } = useLocalSearchParams<{ id: string }>();
 const [cultivo, setCultivo] = useState <Cultivo | null>(null);
@@ -55,22 +50,18 @@ const [balance, setBalance] = useState<BalanceCultivo | null>(null);
     router.push(`/cultivos/${id}/editar`);
   }
 
-  function handleEliminar() {
-    Alert.alert(
-      'Eliminar cultivo',
-      '¿Seguro que quieres eliminar este cultivo? Esta acción también eliminará sus actividades, mano de obra y finanzas asociadas.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            await borrarCultivo(id);
-            router.back();
-          },
-        },
-      ]
-    );
+  async function handleEliminar() {
+    const confirmado = await confirmar({
+      titulo:'Eliminar cultivo',
+      mensaje:'Esta acción también eliminará sus actividades, mano de obra y finanzas asociadas.', 
+      textoConfirmar: 'Eliminar',
+      destructivo: true,
+  });
+
+  if(!confirmado) return;
+  await borrarCultivo(id);
+  mostrarExito('Cultivo eliminado')
+  router.back();
   }
 
   function irARegistrar(tipo: 'actividad' | 'mano-obra' | 'finanzas') {
@@ -228,7 +219,6 @@ const styles = StyleSheet.create({
     padding: 14,
     alignItems: 'center'
   },
-
   botonEliminarTexto: { color: '#fff', fontWeight: 'bold' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 }

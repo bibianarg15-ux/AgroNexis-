@@ -1,14 +1,17 @@
 import { Cultivo } from '@/cultivos/cultivosRepository';
 import { listarCultivosDelUsuario, obtenerCultivo } from '@/cultivos/cultivosService';
+import DateInput from '@/shared/components/DateInput';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
 import { registrarFinanza } from '../finanzasService';
 
 export default function RegistrarFinanzaScreen() {
   const router = useRouter();
   const { cultivoId: cultivoIdParam } = useLocalSearchParams<{ cultivoId?: string }>();
+  const {mostrarError, mostrarAdvertencia} = useFeedback();
 
   const [cultivoSeleccionado, setCultivoSeleccionado] = useState<Cultivo | null>(null);
   const [cultivosDisponibles, setCultivosDisponibles] = useState<Cultivo[]>([]);
@@ -33,7 +36,7 @@ export default function RegistrarFinanzaScreen() {
 
   async function handleGuardar() {
     if (!cultivoSeleccionado) {
-      Alert.alert('Error', 'Elige un cultivo antes de guardar.');
+      mostrarAdvertencia('Elige un cultivo antes de guardar.');
       return;
     }
 
@@ -50,7 +53,7 @@ export default function RegistrarFinanzaScreen() {
     setCargando(false);
 
     if (!resultado.exito) {
-      Alert.alert('Error', resultado.error ?? 'No se pudo guardar el movimiento.');
+      mostrarError(resultado.error ?? 'No se pudo guardar el movimiento.');
       return;
     }
 
@@ -144,11 +147,9 @@ export default function RegistrarFinanzaScreen() {
         />
 
         <Text style={styles.label}>Fecha</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="AAAA-MM-DD"
+        <DateInput
           value={fecha}
-          onChangeText={setFecha}
+          onChange={setFecha}
           editable={!cargando}
         />
 

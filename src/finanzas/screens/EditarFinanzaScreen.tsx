@@ -1,15 +1,9 @@
+import DateInput from '@/shared/components/DateInput';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { editarFinanza, ObtenerFinanza, } from '../finanzasService';
 
 export default function EditarFinanzaScreen() {
@@ -21,6 +15,7 @@ export default function EditarFinanzaScreen() {
   const [valor, setValor] = useState('');
   const [cargandoDatos, setCargandoDatos] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const {mostrarExito, mostrarError} = useFeedback();
 
   useFocusEffect(
     useCallback(() => {
@@ -52,9 +47,11 @@ export default function EditarFinanzaScreen() {
     setGuardando(false);
 
     if (!resultado.exito) {
-      Alert.alert('Error', resultado.error ?? 'No se pudo actualizar el movimiento.');
+      mostrarError(resultado.error ?? 'No se pudo actualizar el movimiento.');
       return;
     }
+
+    mostrarExito('Movimiento actualizado')
 
     router.back();
   }
@@ -110,11 +107,9 @@ export default function EditarFinanzaScreen() {
         />
 
         <Text style={styles.label}>Fecha</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="DD-MM-AAAA"
+        <DateInput
           value={fecha}
-          onChangeText={setFecha}
+          onChange={setFecha}
           editable={!guardando}
         />
 

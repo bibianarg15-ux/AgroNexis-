@@ -1,4 +1,5 @@
 import { obtenerUsuario } from '@/auth/authRepository';
+import { obtenerCultivo } from '@/cultivos/cultivosService';
 import { Actividad, ActividadConCultivo, actualizarActividad, crearActividad, CrearActividadInput, eliminarActividad, listarActividadesPorCultivo, listarRecordatoriosActivos, listarTodasLasActividades, obtenerActividadPorId, obtenerRegistroCosecha, RegistroCosecha, toggleRecordatorio } from './actividadesRepository';
 export interface ActividadFormInput {
     cultivoId: string;
@@ -20,6 +21,18 @@ export interface ActividadResultado {
 
 export interface ActividadConCosecha extends Actividad { registroCosecha: RegistroCosecha | null;
     }
+
+    const DIAS_RECORDATORIO_POR_DEFECTO = 8;
+    const DIAS_RECORDATORIO_MAXIMO =365;
+
+
+  function validarDiasRecordatorio(dias: number | undefined): string | null {
+  if (dias === undefined) return null;
+  if (!Number.isInteger(dias) || dias < 1 || dias > DIAS_RECORDATORIO_MAXIMO) {
+    return `Los días del recordatorio deben ser un número entre 1 y ${DIAS_RECORDATORIO_MAXIMO}.`;
+  }
+  return null;
+}
 
 //Listar las actividades de un cultivo (ingresa desde detalle)
 export async function listarActividadesDelCultivo(cultivoId: string ): Promise<Actividad[]> {
@@ -53,6 +66,11 @@ export async function registrarActividad(datos: ActividadFormInput): Promise<Act
 
   if (!datos.fecha) {
     return { exito: false, error: 'La fecha es obligatoria.' };
+  }
+
+  const cultivo = await obtenerCultivo(datos.cultivoId);
+  if (cultivo && datos.fecha < cultivo.fecha_siembra) {
+    return {exito: false, error: 'La fecha no puede ser anterior a la fecha de siembra del cultivo.'};
   }
 
   // Si es cosecha, se debe registrar al menos una cantidad.

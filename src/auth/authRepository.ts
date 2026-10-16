@@ -63,3 +63,36 @@ export async function crearUsuario (datos: {
         created_at: createdAt,
         };
 }
+
+//Verificar los datos de recuperación 
+export async function verificarDatosRecuperacion(datos: {
+  nombreCompleto: string;
+  fechaNacimiento: string;
+  municipio: string;
+}): Promise<boolean> {
+     const usuario = await obtenerUsuario();
+  if (!usuario) return false;
+
+     const nombreCoincide =
+    usuario.nombre_completo.trim().toLowerCase() === datos.nombreCompleto.trim().toLowerCase();
+
+     const fechaHashCalculado = await hashWithSalt(datos.fechaNacimiento, usuario.pin_salt);
+     const municipioHashCalculado = await hashWithSalt( datos.municipio.toLowerCase().trim(), usuario.pin_salt);
+     const fechaCoincide = fechaHashCalculado === usuario.fecha_nacimiento_hash;
+  const municipioCoincide = municipioHashCalculado === usuario.municipio_hash;
+
+  return nombreCoincide && fechaCoincide && municipioCoincide;
+}
+//Nuevo PIN
+export async function actualizarPin(pinNuevo: string): Promise<void> {
+    const db = await getDatabase();
+   const usuario = await obtenerUsuario();
+  if (!usuario) throw new Error('No hay usuario registrado.');
+
+   const nuevoSalt = await generateSalt();
+   const nuevoHash = await hashWithSalt(pinNuevo, nuevoSalt);
+  await db.runAsync(
+    'UPDATE USUARIOS SET pin_hash = ?, pin_salt = ? WHERE id = ?;',
+    [nuevoHash, nuevoSalt, usuario.id]
+  );
+}

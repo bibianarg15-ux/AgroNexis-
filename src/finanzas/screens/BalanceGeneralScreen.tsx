@@ -1,7 +1,7 @@
 import ScreenHeader from "@/shared/components/ScreenHeader";
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from "react";
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { CultivoConBalance, obtenerBalanceGeneral } from "../finanzasService";
 
 
@@ -10,6 +10,7 @@ export default function BalanceGeneralScreen() {
   const router = useRouter();
   const [cultivosConBalance, setCultivosConBalance] = useState<CultivoConBalance[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [busqueda, setBusqueda] = useState('');
 
    useFocusEffect(
       useCallback(() => {
@@ -28,7 +29,10 @@ export default function BalanceGeneralScreen() {
     const totalIngresos = cultivosConBalance.reduce((acc, c ) => acc + c.balance.ingresos, 0);
     const totalEgresos = cultivosConBalance.reduce((acc, c ) => acc + c.balance.egresos, 0);
 
-    
+    const cultivosConBalanceFiltrados = cultivosConBalance.filter((item) => 
+      item.cultivo.nombre.toLowerCase().includes(busqueda.toLowerCase())
+    );
+
     function irAFinanzasDelCultivo(cultivoId: string) {
       router.push(`/finanzas/cultivo/${cultivoId}`);
     }
@@ -46,13 +50,24 @@ export default function BalanceGeneralScreen() {
        mostrarBotonAgregar={true}
        onAgregar={() => router.push('/finanzas/nuevo')} />
 
+       <View style={styles.buscadorContainer}>
+     <TextInput
+      style={styles.buscador}
+      placeholder="Buscar cultivo"
+      value={busqueda}
+      onChangeText={setBusqueda}
+    />
+   </View>
+
       {!cargando && cultivosConBalance.length === 0 ? (
         <View style={styles.vacioContainer}>
           <Text style={styles.vacioTitulo}>Aún no tienes cultivos registrados</Text>
         </View>
+        
+        
       ) : (
         <FlatList
-          data={cultivosConBalance}
+          data={cultivosConBalanceFiltrados}
           keyExtractor={(item) => item.cultivo.id}
           contentContainerStyle={styles.lista}
           ListHeaderComponent={
@@ -140,4 +155,13 @@ const styles = StyleSheet.create({
   totalItem: { alignItems: 'center' },
   totalLabel: { fontSize: 14, color: '#8B6F47' },
   totalValor: { fontSize: 16, fontWeight: 'bold', marginTop: 4 },
+  buscadorContainer: { paddingHorizontal: 16, paddingTop: 12 },
+  buscador: {
+    borderWidth: 0.5,
+    borderColor: '#9CA3AF',
+    borderRadius: 8,
+    padding: 12,    
+    backgroundColor: '#fff',
+    fontSize: 15,
+  },
 });
