@@ -1,1 +1,1 @@
-export {default} from  '@/cultivos/screens/NuevoCultivoScreen';
+export { default } from '@/cultivos/screens/NuevoCultivoScreen';

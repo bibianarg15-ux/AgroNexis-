@@ -1,28 +1,23 @@
 import PinInput from '@/shared/components/PinInput';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  Alert,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { iniciarSesion } from '../authService';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [pin, setPin] = useState(['', '', '', '']);
   const [cargando, setCargando] = useState(false);
+  const {mostrarError} = useFeedback();
 
   async function validarLogin(pinCompleto: string) {
     setCargando(true);
     const resultado = await iniciarSesion(pinCompleto);
     setCargando(false);
-    // Limpia el PIN tras un error para evitar confusiones.
+    // Limpia el PIN tras un error.
     if (!resultado.exito) {
-      Alert.alert('Error', resultado.error ?? 'No se pudo iniciar sesión.');
+      mostrarError(resultado.error ?? 'No se pudo iniciar sesión.');
       setPin(['', '', '', '']);
       return;
     }

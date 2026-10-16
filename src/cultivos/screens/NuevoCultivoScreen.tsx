@@ -1,11 +1,14 @@
+import DateInput from '@/shared/components/DateInput';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { registraCultivo } from '../cultivosService';
 
 export default function NuevoCultivoScreen() {
     const router = useRouter();
+    const {mostrarError, mostrarExito} = useFeedback();
     const [nombre, setNombre] = useState('');
     const [fechaSiembra, setFechaSiembra] = useState(new Date().toISOString().slice(0, 10));
     const [unidadMedida, setUnidadMedida] = useState('carga');
@@ -32,15 +35,17 @@ export default function NuevoCultivoScreen() {
         });
         setCargando(false);       
         if (!resultado.exito) {
-            Alert.alert('Error', resultado.error ?? 'No se pudo registrar el cultivo');
+            mostrarError(resultado.error ?? 'No se pudo registrar el cultivo');
             return;
         }
+
+        mostrarExito('Cultivo guardado')
+
         router.back();
     }
 return (
   <ScrollView contentContainerStyle={styles.container}>
   <ScreenHeader titulo="Nuevo cultivo" />
-      <Text style={styles.label}>Nombre</Text>
         <Text style={styles.label}>Nombre del cultivo:</Text>
         <TextInput
             style={styles.input}
@@ -50,12 +55,12 @@ return (
             editable={!cargando}/>
 
         <Text style={styles.label}>Fecha de siembra:</Text>
-        <TextInput
-            style={styles.input}
+        <DateInput
             value={fechaSiembra}
-            placeholder="YYYY-MM-DD"
-            onChangeText={setFechaSiembra}
-            editable={!cargando}/>
+            onChange={setFechaSiembra}
+            editable={!cargando}
+            maximumDate={new Date()}
+        />
 
         <Text style={styles.label}>Unidad de medida:</Text>
         <TextInput
@@ -86,11 +91,9 @@ return (
       />
 
       <Text style={styles.label}>Fecha estimada de cosecha</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Opcional"
+      <DateInput
         value={fechaCosechaEstimada}
-        onChangeText={setFechaCosechaEstimada}
+        onChange={setFechaCosechaEstimada}
         editable={!cargando}
       />
 

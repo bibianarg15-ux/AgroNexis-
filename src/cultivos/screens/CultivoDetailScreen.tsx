@@ -1,25 +1,22 @@
 import { Actividad, listarActividadesPorCultivo } from '@/actividades/actividadesRepository';
+import { BalanceCultivo, calcularBalanceCultivo } from '@/finanzas/finanzasService';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Cultivo } from '../cultivosRepository';
 import { borrarCultivo, obtenerCultivo } from '../cultivosService';
 
 export default function CultivoDetailScreen() {
 const router = useRouter();
+const {confirmar, mostrarExito} = useFeedback();
 
 const { id } = useLocalSearchParams<{ id: string }>();
 const [cultivo, setCultivo] = useState <Cultivo | null>(null);
 const [cargando, setCargando] = useState(true);
 const [actividades, setActividades] = useState<Actividad[]>([]);
+const [balance, setBalance] = useState<BalanceCultivo | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -35,12 +32,17 @@ const [actividades, setActividades] = useState<Actividad[]>([]);
 
   useFocusEffect(
   useCallback(() => {
-    async function cargarActividades() {
-      const resultado = await listarActividadesPorCultivo(id);
-      setActividades(resultado);
+    async function cargarDatos() {
+      const [actividades, resultadoBalance] = await Promise.all([
+        listarActividadesPorCultivo(id),
+        calcularBalanceCultivo(id),
+      ]);
+
+      setActividades(actividades);
+      setBalance(resultadoBalance);
     }
 
-    cargarActividades();
+    cargarDatos();
   }, [id])
 );
 
@@ -48,22 +50,18 @@ const [actividades, setActividades] = useState<Actividad[]>([]);
     router.push(`/cultivos/${id}/editar`);
   }
 
-  function handleEliminar() {
-    Alert.alert(
-      'Eliminar cultivo',
-      '¿Seguro que quieres eliminar este cultivo? Esta acción también eliminará sus actividades, mano de obra y finanzas asociadas.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            await borrarCultivo(id);
-            router.back();
-          },
-        },
-      ]
-    );
+  async function handleEliminar() {
+    const confirmado = await confirmar({
+      titulo:'Eliminar cultivo',
+      mensaje:'Esta acción también eliminará sus actividades, mano de obra y finanzas asociadas.', 
+      textoConfirmar: 'Eliminar',
+      destructivo: true,
+  });
+
+  if(!confirmado) return;
+  await borrarCultivo(id);
+  mostrarExito('Cultivo eliminado')
+  router.back();
   }
 
   function irARegistrar(tipo: 'actividad' | 'mano-obra' | 'finanzas') {
@@ -79,8 +77,12 @@ const [actividades, setActividades] = useState<Actividad[]>([]);
     return;
   }
 
-  Alert.alert(`El registro de ${tipo} estará disponible pronto.`);
-}
+  if(tipo === 'finanzas') {
+    router.push(`/finanzas/cultivo/${cultivo.id}`);
+    return;
+  }
+  }
+
 
   if (cargando || !cultivo) {
     return (
@@ -104,7 +106,7 @@ const [actividades, setActividades] = useState<Actividad[]>([]);
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Balance:</Text>
-          <Text style={styles.statValor}>—</Text>
+          <Text style={styles.statValor}>{balance?.balance.toLocaleString('es-CO') ?? 0}</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Actividades:</Text>
@@ -217,7 +219,6 @@ const styles = StyleSheet.create({
     padding: 14,
     alignItems: 'center'
   },
-
   botonEliminarTexto: { color: '#fff', fontWeight: 'bold' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 }

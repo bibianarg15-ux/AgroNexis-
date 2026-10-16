@@ -1,19 +1,13 @@
+import DateInput from '@/shared/components/DateInput';
 import PinInput from '@/shared/components/PinInput';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
 import { registrarAgricultor } from '../authService';
 
 export default function RegistroScreen() {
   const router = useRouter();
-
   const [nombreCompleto, setNombreCompleto] = useState('');
   const [municipio, setMunicipio] = useState('');
   const [correo, setCorreo] = useState('');
@@ -21,10 +15,10 @@ export default function RegistroScreen() {
   const [pin, setPin] = useState(['','','','']);
   const [confirmarPin, setConfirmarPin] = useState(['','','','']);
   const [cargando, setCargando] = useState(false);
+  const {mostrarError}= useFeedback();
 
   async function handleCrearCuenta() {
     setCargando(true);
-//Envia undefined para que el campo se guarde como NULL y no como campo vacio
     const resultado = await registrarAgricultor({
       nombreCompleto,
       correo: correo.trim() || undefined,
@@ -35,13 +29,9 @@ export default function RegistroScreen() {
     });
 
     setCargando(false);
-    console.log('Resultado:', resultado);
-
-
-console.log('Voy a navegar a Cultivos...');
-
+    
     if (!resultado.exito) {
-      Alert.alert('Error', resultado.error ?? 'No se pudo crear la cuenta.');
+      mostrarError(resultado.error ?? 'No se pudo crear la cuenta.');
       return;
     }
     router.replace('/(app)/cultivos'); 
@@ -81,12 +71,11 @@ console.log('Voy a navegar a Cultivos...');
       />
 
       <Text style={styles.label}>Fecha de nacimiento</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="AAAA-MM-DD"
+      <DateInput
         value={fechaNacimiento}
-        onChangeText={setFechaNacimiento}
+        onChange={setFechaNacimiento}
         editable={!cargando}
+        maximumDate={new Date()}
       />
 
       <Text style={styles.label}>PIN (4 dígitos)</Text>

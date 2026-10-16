@@ -1,29 +1,23 @@
 import { Cultivo } from '@/cultivos/cultivosRepository';
 import { obtenerCultivo } from '@/cultivos/cultivosService';
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { BasketIcon, BellIcon, ClipboardTextIcon, DotsThreeVerticalIcon } from 'phosphor-react-native';
 import { useCallback, useState } from 'react';
-
-import {
-  Alert,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Actividad, ActividadConCultivo } from '../actividadesRepository';
 import { borrarActividad, cambiarEstadoRecordatorio, listarActividadesDelCultivo, listarTodasActividadesDelUsuario, } from '../actividadesService';
 
 export default function ActividadesListScreen() {
   const router = useRouter();
+  const {mostrarExito, confirmar} = useFeedback();
   const { cultivoId } = useLocalSearchParams<{ cultivoId?: string }>();
   const [cultivo, setCultivo] = useState<Cultivo | null>(null);
   const [actividades, setActividades] = useState<(Actividad | ActividadConCultivo)[]>([]);
   const [menuAbierto, setMenuAbierto] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [busqueda, setBusqueda] =useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -65,20 +59,25 @@ export default function ActividadesListScreen() {
     router.push(`/actividades/${id}/editar`);
   }
 
-  function handleEliminar(id: string) {
+  async function handleEliminar(id: string) {
     setMenuAbierto(null);
-    Alert.alert('Eliminar actividad', '¿Seguro que quieres eliminarla?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
+    const confirmado = await confirmar({
+      titulo:'Eliminar actividad',
+      mensaje:'¿Seguro que quieres eliminarla?',
+      textoConfirmar:'Eliminar' ,
+      destructivo: true,
+    })
+
+    if(!confirmado) return;
           await borrarActividad(id);
+          mostrarExito('Actividad eliminada')
           recargar();
-        },
-      },
-    ]);
-  }
+        };
+
+  //Filtrar actividades por nombre
+  const actividadesFiltradas = actividades.filter((a) => 
+    a.actividad.toLowerCase().includes(busqueda.toLowerCase())
+  )
 
   async function handleToggleRecordatorio(item: Actividad) {
     setMenuAbierto(null);
@@ -104,6 +103,15 @@ export default function ActividadesListScreen() {
      mostrarBotonAgregar={true} 
      onAgregar={irANuevaActividad}
 />
+    <View style ={ styles.buscadorContainer}>
+      <TextInput
+      style = { styles.buscador}
+      placeholder='Buscar actividad'
+      value = {busqueda}
+      onChangeText={setBusqueda}
+      />
+      </View>
+    
       {!cargando && actividades.length === 0 ? (
               <View style={styles.vacioContainer}>
                 <Image
@@ -132,7 +140,7 @@ export default function ActividadesListScreen() {
             )  : (
         <>
           <FlatList
-            data={actividades}
+            data={actividadesFiltradas}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.lista}
             renderItem={({ item }) => (
@@ -206,4 +214,14 @@ const styles = StyleSheet.create({
   menuItem: { paddingVertical: 8 },
   menuItemTexto: { fontSize: 14, color: '#333333' },
   botonAgregar: { color: '#fff', fontSize: 28, fontWeight: 'bold' },
+
+  buscadorContainer: { paddingHorizontal: 16, paddingTop: 12 },
+buscador: {
+  borderWidth: 0.5,
+  borderColor: '#9CA3AF',
+  borderRadius: 8,
+  padding: 12,
+  backgroundColor: '#fff',
+  fontSize: 15,
+},
 });

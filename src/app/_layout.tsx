@@ -1,4 +1,5 @@
 import { runMigrations } from '@/database/migrations';
+import { FeedbackProvider } from '@/shared/feedback/feedbackProvider';
 import {
   Fraunces_400Regular,
   Fraunces_700Bold,
@@ -59,5 +60,10 @@ export default function RootLayout() {
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
-}
+
+  return (
+    <FeedbackProvider>
+      <Stack screenOptions={{headerShown: false}}/>
+      </FeedbackProvider>
+  );
+};

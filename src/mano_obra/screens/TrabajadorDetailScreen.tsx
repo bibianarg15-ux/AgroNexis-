@@ -1,13 +1,15 @@
 import ScreenHeader from '@/shared/components/ScreenHeader';
+import { useFeedback } from '@/shared/feedback/feedbackProvider';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { DotsThreeVerticalIcon } from 'phosphor-react-native';
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { JornalConDetalle } from '../manoObraRepository';
 import { borrarJornal, obtenerManoObraPorCultivo, obtenerTodaLaManoObra } from '../manoObraService';
 
 export default function TrabajadorDetailScreen() {
   const router = useRouter();
+  const {mostrarExito, confirmar} = useFeedback();
   const { trabajadorId, cultivoId } = useLocalSearchParams<{
     trabajadorId: string;
     cultivoId?: string;
@@ -54,21 +56,20 @@ export default function TrabajadorDetailScreen() {
     router.push(`/mano-obra/${id}/editar`);
   }
 
-  function handleEliminar(id: string) {
+  async function handleEliminar(id: string) {
     setMenuAbierto(null);
-    Alert.alert('Eliminar jornal', '¿Seguro que quieres eliminarlo?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          await borrarJornal(id);
-          cargar();
-        },
-      },
-    ]);
-  }
+    const confirmado = await confirmar({
+      titulo: 'Eliminar jornal',
+      mensaje: '¿Seguro que quieres eliminarlo?',
+      textoConfirmar:'Eliminar',
+      destructivo: true
+    });
 
+    if(!confirmado) return;
+          await borrarJornal(id);
+          mostrarExito('Cultivo eliminado')
+          cargar();
+        }
   return (
     <View style={styles.container}>
 
