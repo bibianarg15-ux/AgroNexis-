@@ -1,13 +1,16 @@
 import { runMigrations } from '@/database/migrations';
 import { FeedbackProvider } from '@/shared/feedback/feedbackProvider';
+import { sincronizarNotificaciones } from '@/shared/notifications/notificacionesService';
+import { useNavegacionDesdeNotificacion } from '@/shared/notifications/useNavegacionDesdeNotificacion';
 import {
   Fraunces_400Regular,
   Fraunces_700Bold,
   useFonts,
 } from '@expo-google-fonts/fraunces';
-import { Stack } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
+
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -17,7 +20,9 @@ export default function RootLayout() {
 
   const [dbReady, setDbReady] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
+  const segments = useSegments();
 
+  useNavegacionDesdeNotificacion(segments[0] === '(app)');
   useEffect(() => {
     runMigrations()
       .then(() => {
@@ -28,6 +33,11 @@ export default function RootLayout() {
         setDbError('No se pudo inicializar la base de datos.');
       });
   }, []);
+
+  useEffect(() => {
+  if (dbReady) sincronizarNotificaciones();
+}, [dbReady]);
+
 
   if (dbError) {
     return (
@@ -66,4 +76,6 @@ export default function RootLayout() {
       <Stack screenOptions={{headerShown: false}}/>
       </FeedbackProvider>
   );
+
+
 };

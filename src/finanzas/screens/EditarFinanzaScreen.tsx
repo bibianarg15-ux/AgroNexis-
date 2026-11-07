@@ -6,6 +6,14 @@ import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { editarFinanza, ObtenerFinanza, } from '../finanzasService';
 
+function formatearValor(texto: string): string {
+  const numeros = texto.replace(/\D/g, '');
+
+  if (!numeros) return '';
+
+  return numeros.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 export default function EditarFinanzaScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,7 +34,7 @@ export default function EditarFinanzaScreen() {
         if (finanza) {
           setTipo(finanza.tipo);
           setDescripcion(finanza.descripcion);
-          setValor(String(finanza.valor));
+          setValor(formatearValor(String(finanza.valor)));
           setFecha(new Date(finanza.fecha).toISOString().slice(0, 10));
     }
         setCargandoDatos(false);
@@ -41,7 +49,7 @@ export default function EditarFinanzaScreen() {
       tipo,
       descripcion,
       fecha: new Date(fecha).getTime(),
-      valor: Number(valor),
+      valor: Number(valor.replace(/\./g, '')),
     });
 
     setGuardando(false);
@@ -101,7 +109,7 @@ export default function EditarFinanzaScreen() {
         <TextInput
           style={styles.input}
           value={valor}
-          onChangeText={setValor}
+          onChangeText={(texto) => setValor(formatearValor(texto))}
           keyboardType="numeric"
           editable={!guardando}
         />

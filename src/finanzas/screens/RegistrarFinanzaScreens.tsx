@@ -8,6 +8,15 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, } from 'react-native';
 import { registrarFinanza } from '../finanzasService';
 
+
+function formatearValor(texto: string): string {
+  const numeros = texto.replace(/\D/g, '');
+
+  if (!numeros) return '';
+
+  return Number(numeros).toLocaleString('es-CO');
+}
+
 export default function RegistrarFinanzaScreen() {
   const router = useRouter();
   const { cultivoId: cultivoIdParam } = useLocalSearchParams<{ cultivoId?: string }>();
@@ -46,7 +55,7 @@ export default function RegistrarFinanzaScreen() {
       cultivoId: cultivoSeleccionado.id,
       tipo,
       descripcion,
-      valor: Number(valor),
+      valor: Number(valor.replace(/\./g,'')),
       fecha: new Date(fecha).getTime(),
     });
 
@@ -141,7 +150,7 @@ export default function RegistrarFinanzaScreen() {
           style={styles.input}
           placeholder="$ 1'000.000"
           value={valor}
-          onChangeText={setValor}
+          onChangeText={(texto) => setValor(formatearValor(texto))}
           keyboardType="numeric"
           editable={!cargando}
         />

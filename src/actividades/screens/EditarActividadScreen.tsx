@@ -3,6 +3,8 @@ import { obtenerCultivo } from '@/cultivos/cultivosService';
 import DateInput from '@/shared/components/DateInput';
 import ScreenHeader from '@/shared/components/ScreenHeader';
 import { useFeedback } from '@/shared/feedback/feedbackProvider';
+import { sincronizarNotificaciones } from '@/shared/notifications/notificacionesService';
+import { usePermisoNotificaciones } from '@/shared/notifications/usePermisoNotificaciones ';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -12,6 +14,8 @@ export default function EditarActividadScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const {mostrarError, mostrarExito} = useFeedback();
+  const pedirPermiso = usePermisoNotificaciones();
+  
 
   const [cultivo, setCultivo] = useState<Cultivo | null>(null);
   const [esCosecha, setEsCosecha] = useState(false);
@@ -39,7 +43,11 @@ export default function EditarActividadScreen() {
           setFecha(new Date(data.fecha).toISOString().slice(0, 10));
           setObservaciones(data.observaciones ?? '');
           setCrearRecordatorio(data.crear_recordatorio === 1);
-          setDiasRecordatorio(String(data.dias_recordatorio ?? 8));
+          setDiasRecordatorio(
+            data.crear_recordatorio === 1 && data.dias_recordatorio
+            ? String(data.dias_recordatorio)
+            : ''
+          );
 
           if (data.registroCosecha) {
             setCantidad1(String(data.registroCosecha.categoria_1_cantidad));
@@ -77,7 +85,10 @@ export default function EditarActividadScreen() {
       return;
     }
 
-    mostrarExito('Cultivo actualizado')
+    if (crearRecordatorio) {
+      await sincronizarNotificaciones();
+    }
+    mostrarExito('Cultivo actualizado');
 
     router.back();
   }
@@ -152,7 +163,9 @@ export default function EditarActividadScreen() {
           <Text style={styles.label}>¿Crear recordatorio?</Text>
           <Switch
             value={crearRecordatorio}
-            onValueChange={setCrearRecordatorio}
+            onValueChange={ async (activo) => {setCrearRecordatorio(activo);
+              if(activo) await pedirPermiso();
+            }}
             disabled={guardando}
           />
         </View>

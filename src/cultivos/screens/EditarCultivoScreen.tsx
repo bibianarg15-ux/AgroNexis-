@@ -1,6 +1,7 @@
 import DateInput from '@/shared/components/DateInput';
 import ScreenHeader from '@/shared/components/ScreenHeader';
 import { useFeedback } from '@/shared/feedback/feedbackProvider';
+import { usePermisoNotificaciones } from '@/shared/notifications/usePermisoNotificaciones ';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -21,6 +22,8 @@ export default function EditarCultivoScreen() {
     const [observaciones, setObservaciones] = useState('');
     const [cargandoDatos, setCargandoDatos] = useState(false);
     const [guardando, setGuardando] = useState(false);
+    const [diasAnticipacion, setDiasAnticipacion] = useState('');
+    const pedirPermiso = usePermisoNotificaciones();
 
 
 useFocusEffect(
@@ -39,6 +42,11 @@ useFocusEffect(
         setFechaCosechaEstimada
         (cultivo.fecha_cosecha_estimada? new Date(cultivo.fecha_cosecha_estimada).toISOString().slice(0, 10): '');
         setCrearRecordatorio(cultivo.crear_recordatorio_cosecha === 1);
+        setDiasAnticipacion(
+       cultivo.crear_recordatorio_cosecha === 1 && cultivo.dias_anticipacion_recordatorio
+       ? String(cultivo.dias_anticipacion_recordatorio)
+       : ''
+      );
         setObservaciones(cultivo.observaciones ?? '');
     }
         setCargandoDatos(false);
@@ -58,8 +66,30 @@ useFocusEffect(
             fechaCosechaEstimada: fechaCosechaEstimada ? new Date(fechaCosechaEstimada).getTime()
             : undefined,
             crearRecordatorioCosecha: crearRecordatorio,
+            diasAnticipacionRecordatorio: crearRecordatorio && diasAnticipacion !== '' ? Number(diasAnticipacion)
+            : undefined,
             observaciones,
-        });
+        })
+
+           if (crearRecordatorio) {
+        if (!fechaCosechaEstimada) {
+        return;
+        }
+
+  const dias = Number(diasAnticipacion);
+
+  if (
+    diasAnticipacion.trim() === '' ||
+    !Number.isInteger(dias) ||
+    dias < 1 ||
+    dias > 365
+  ) {
+    mostrarError('Indica un número de días entre 1 y 365.');
+    return;
+  }
+  
+
+        };
         setGuardando(false);
         if(!resultado.exito) {
             mostrarError(resultado.error ?? 'No se pudo actualizar el cultivo.');
@@ -137,10 +167,35 @@ useFocusEffect(
         <Text style={styles.label}>¿Crear recordatorio?</Text>
         <Switch
           value={crearRecordatorio}
-          onValueChange={setCrearRecordatorio}
+          onValueChange={ async (activo) =>{setCrearRecordatorio(activo);
+            if(activo) await pedirPermiso();
+          }}
           disabled={guardando}
         />
       </View>
+
+      {crearRecordatorio && (
+  <>
+    <Text style={styles.label}>
+      Días de anticipación del recordatorio
+    </Text>
+
+    <TextInput
+      style={styles.input}
+      placeholder="Ej. 7"
+      value={diasAnticipacion}
+      onChangeText={(t) =>
+        setDiasAnticipacion(t.replace(/[^0-9]/g, ''))
+      }
+      keyboardType="numeric"
+      editable={!guardando}
+    />
+
+    <Text style={{ paddingHorizontal: 20, color: '#666' }}>
+      Elige entre 1 y 365 días antes de la cosecha.
+    </Text>
+  </>
+)}
 
       <Text style={styles.label}>Observaciones</Text>
       <TextInput

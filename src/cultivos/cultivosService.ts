@@ -1,3 +1,4 @@
+import { sincronizarNotificaciones } from "@/shared/notifications/notificacionesService";
 import { obtenerUsuario } from "../auth/authRepository";
 import { actualizarCultivo, crearCultivo, CrearCultivoInput, Cultivo, eliminarCultivo, listarCultivos, obtenerCultivoPorId } from "./cultivosRepository";
 export interface CultivoFormInput {
@@ -45,10 +46,20 @@ export async function registraCultivo(datos: CultivoFormInput): Promise<CultivoR
     if(datos.fechaCosechaEstimada && datos.fechaCosechaEstimada <= fechaSiembra) {
         return { exito: false, error: 'La fecha de cosecha estimada debe ser posterior a la fecha de siembra' };
     }
-    const diasAnticipacion = datos.crearRecordatorioCosecha
-  ? (datos.diasAnticipacionRecordatorio ?? 3)
-  : undefined;
- 
+    if(datos.crearRecordatorioCosecha){
+        if(!datos.fechaCosechaEstimada){
+            return {exito:false, error:'Para crear el recordatorio, indica la fecha estimada de cosecha',
+        };
+    }}
+
+    if (datos.crearRecordatorioCosecha) {
+     if (!datos.fechaCosechaEstimada) {
+      return {
+      exito: false,
+      error: 'Debes indicar la fecha estimada de cosecha.',
+    };
+    }
+}
 
   const cultivo = await crearCultivo({
     usuarioId: usuario.id,
@@ -60,11 +71,12 @@ export async function registraCultivo(datos: CultivoFormInput): Promise<CultivoR
     categoria3: datos.categoria3,
     fechaCosechaEstimada: datos.fechaCosechaEstimada,
     crearRecordatorioCosecha: datos.crearRecordatorioCosecha ? 1: 0,
-    diasAnticipacionRecordatorio: diasAnticipacion,
+    diasAnticipacionRecordatorio: datos.diasAnticipacionRecordatorio,
     observaciones: datos.observaciones,
 });
+void sincronizarNotificaciones();
   return { exito: true, cultivo };
-}
+}; 
 
 //editar un cultivo existente
 export async function editarCultivo(id:string, datos: Partial<CultivoFormInput>): Promise<CultivoResultado> {
@@ -77,11 +89,13 @@ export async function editarCultivo(id:string, datos: Partial<CultivoFormInput>)
     }
     await actualizarCultivo(id, datos as Partial<CrearCultivoInput>);
     const cultivoActualizado = await obtenerCultivoPorId(id);
+    void sincronizarNotificaciones();
     return { exito: true, cultivo: cultivoActualizado ?? undefined };
 }
 
 //eliminar un cultivo existente
 export async function borrarCultivo(id: string): Promise<CultivoResultado> {
   await eliminarCultivo(id);
+  void sincronizarNotificaciones();
   return { exito: true };
-}
+};

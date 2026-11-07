@@ -1,16 +1,10 @@
 import { obtenerUsuario } from "@/auth/authRepository";
+import { programarPrueba } from "@/shared/notifications/notificacionesService";
+import { usePermisoNotificaciones } from "@/shared/notifications/usePermisoNotificaciones ";
 import { useFocusEffect, useRouter } from "expo-router";
 import { EyeIcon, PencilSimpleIcon } from "phosphor-react-native";
 import { useCallback, useState } from "react";
-import {
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Cultivo } from "../cultivosRepository";
 import { listarCultivosDelUsuario } from "../cultivosService";
 
@@ -21,6 +15,7 @@ export default function CultivosListScreen() {
   const [nombreUsuario, setNombreUsuario] = useState("");
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState("");
+  const pedirPermiso = usePermisoNotificaciones();
 
   useFocusEffect(
     useCallback(() => {
@@ -54,6 +49,7 @@ export default function CultivosListScreen() {
     c.nombre.toLowerCase().includes(busqueda.toLowerCase())
 );
 
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -62,6 +58,17 @@ export default function CultivosListScreen() {
           <Text style={styles.botonAgregar}>+</Text>
         </TouchableOpacity>
       </View>
+
+      {__DEV__ && (
+            <TouchableOpacity
+            onPress={async () => {
+              await pedirPermiso();
+              await programarPrueba(5);
+            }}
+            >
+           <Text>Probar aviso</Text>
+              </TouchableOpacity>
+      )}
 
        <View style={styles.buscadorContainer}>
           <TextInput
@@ -85,8 +92,9 @@ export default function CultivosListScreen() {
           <Text style={styles.vacioSubtitulo}>
             Registra tu primer cultivo para empezar a llevar el control
           </Text>
+          
 
-          <TouchableOpacity
+                    <TouchableOpacity
             style={styles.botonPrincipal}
             onPress={irANuevoCultivo}
           >
@@ -150,6 +158,7 @@ export default function CultivosListScreen() {
         />
       )}
     </View>
+
   );
 }
 

@@ -7,6 +7,14 @@ import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 
 import { obtenerJornalPorId } from '../manoObraRepository';
 import { editarJornal } from '../manoObraService';
 
+function formatearValor(texto: string): string {
+  const numeros = texto.replace(/\D/g, '');
+
+  if (!numeros) return '';
+
+  return numeros.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 export default function EditarJornalScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,7 +34,7 @@ export default function EditarJornalScreen() {
 
         if (jornal) {
           setFecha(new Date(jornal.fecha).toISOString().slice(0, 10));
-          setValorJornal(String(jornal.valor_jornal));
+          setValorJornal(formatearValor(String(jornal.valor_jornal)));
           setObservaciones(jornal.observaciones ?? '');
         }
         setCargandoDatos(false);
@@ -40,7 +48,7 @@ export default function EditarJornalScreen() {
 
     const resultado = await editarJornal(id, {
       fecha: new Date(fecha).getTime(),
-      valorJornal: Number(valorJornal),
+      valorJornal: Number(valorJornal.replace(/\./g,'')),
       observaciones,
     });
 
@@ -81,9 +89,9 @@ export default function EditarJornalScreen() {
         <Text style={styles.label}>Valor del jornal</Text>
         <TextInput
           style={styles.input}
-          placeholder="$"
+          placeholder="$60.000"
           value={valorJornal}
-          onChangeText={setValorJornal}
+          onChangeText={(texto)=> setValorJornal(formatearValor(texto))}
           keyboardType="numeric"
           editable={!guardando}
         />

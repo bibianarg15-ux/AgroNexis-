@@ -9,6 +9,14 @@ import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 
 import { listarTrabajadoresDelUsuario, registrarJornal, registrarTrabajador } from '../manoObraService';
 import { Trabajador } from '../trabajadoresRepository';
 
+function formatearValor(texto: string): string {
+  const numeros = texto.replace(/\D/g, '');
+
+  if (!numeros) return '';
+
+  return numeros.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 export default function RegistrarJornalScreen() {
   const router = useRouter();
   const { cultivoId: cultivoIdParam } = useLocalSearchParams<{ cultivoId?: string }>();
@@ -81,7 +89,7 @@ export default function RegistrarJornalScreen() {
       cultivoId: cultivoSeleccionado.id,
       trabajadorId: trabajadorId ?? '',
       fecha: new Date(fecha).getTime(),
-      valorJornal: Number(valorJornal),
+      valorJornal: Number(valorJornal.replace(/\./g,'')),
       observaciones,
     });
 
@@ -200,9 +208,9 @@ export default function RegistrarJornalScreen() {
         <Text style={styles.label}>Valor del jornal</Text>
         <TextInput
           style={styles.input}
-          placeholder="$"
+          placeholder="$60.000"
           value={valorJornal}
-          onChangeText={setValorJornal}
+          onChangeText={(texto)=>setValorJornal(formatearValor(texto))}
           keyboardType="numeric"
           editable={!cargando}
         />

@@ -17,10 +17,18 @@ export default function ScreenHeader({
 }: ScreenHeaderProps) {
   const router = useRouter();
 
+  function volver() {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/cultivos');
+    }
+  }
+
   return (
     <View style={styles.header}>
       {mostrarFlechaAtras ? (
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={volver}>
           <ArrowLeftIcon size={22} color="#ffffff" />
         </TouchableOpacity>
       ) : null}

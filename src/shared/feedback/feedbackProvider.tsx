@@ -106,7 +106,6 @@ export function FeedbackProvider({
       if (confirmacion) {
         return Promise.resolve(false);
       }
-
       return new Promise<boolean>((resolver) => {
         setConfirmacion({ opciones, resolver });
       });
@@ -118,7 +117,6 @@ export function FeedbackProvider({
   const responder = useCallback(
     (valor: boolean) => {
       if (!confirmacion) return;
-
       confirmacion.resolver(valor);
       setConfirmacion(null);
     },

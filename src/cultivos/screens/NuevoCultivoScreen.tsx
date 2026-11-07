@@ -1,6 +1,7 @@
 import DateInput from '@/shared/components/DateInput';
 import ScreenHeader from '@/shared/components/ScreenHeader';
 import { useFeedback } from '@/shared/feedback/feedbackProvider';
+import { usePermisoNotificaciones } from '@/shared/notifications/usePermisoNotificaciones ';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -17,11 +18,25 @@ export default function NuevoCultivoScreen() {
     const [categoria3, setCategoria3] = useState('Tercera');
     const [fechaCosechaEstimada, setFechaCosechaEstimada] = useState('');
     const [crearRecordatorio, setCrearRecordatorio] = useState(false);
+    const [diasAnticipacion, setDiasAnticipacion] = useState('1');
     const [observaciones, setObservaciones] = useState('');
     const [cargando, setCargando] = useState(false);
+    const pedirPermiso = usePermisoNotificaciones();
 
     const handleGuardar = async () => {
+  if (cargando) return;
         setCargando(true);
+        const textoDias = diasAnticipacion.trim();
+        const dias = textoDias === '' ? 1 : Number(textoDias);
+        if (
+          crearRecordatorio &&
+          (!Number.isInteger(dias) || dias < 1 || dias > 365)
+        ) {
+          mostrarError('Los días de anticipación deben ser un número entre 1 y 365.');
+          setCargando(false)
+          return;
+        }
+
         const resultado = await registraCultivo({
             nombre,
             fechaSiembra: new Date(fechaSiembra).getTime(),
@@ -31,9 +46,12 @@ export default function NuevoCultivoScreen() {
             categoria3,
             fechaCosechaEstimada: fechaCosechaEstimada ? new Date(fechaCosechaEstimada).getTime() : undefined,
             crearRecordatorioCosecha: crearRecordatorio,
+            diasAnticipacionRecordatorio: crearRecordatorio ? dias : undefined,
             observaciones,
+
         });
-        setCargando(false);       
+        setCargando(false); 
+  
         if (!resultado.exito) {
             mostrarError(resultado.error ?? 'No se pudo registrar el cultivo');
             return;
@@ -101,10 +119,26 @@ return (
         <Text style={styles.label}>¿Crear recordatorio?</Text>
         <Switch
           value={crearRecordatorio}
-          onValueChange={setCrearRecordatorio}
+          onValueChange={async (activo) =>{setCrearRecordatorio(activo);
+            if(activo) await pedirPermiso();
+          }}
           disabled={cargando}
         />
-      </View>
+        </View>
+
+        {crearRecordatorio && (
+  <View>
+    <Text style={styles.label}>Días de anticipación (opcional)</Text>
+
+    <TextInput
+      value={diasAnticipacion}
+      onChangeText={setDiasAnticipacion}
+      keyboardType="numeric"
+      placeholder="Ej. 3"
+      editable={!cargando}
+    />
+  </View>
+)}
 
       <Text style={styles.label}>Observaciones</Text>
       <TextInput

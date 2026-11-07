@@ -128,3 +128,14 @@ export async function eliminarCultivo(id:string): Promise<void> {
     const db = await getDatabase();
     await db.runAsync('DELETE FROM CULTIVOS WHERE id = ?', [id]);
 }
+
+//Consultar nuevos 
+export async function listarCultivosConRecordatorio(): Promise<Cultivo[]>{
+    const db = await getDatabase();
+    return await db.getAllAsync<Cultivo>(
+        `SELECT * FROM CULTIVOS
+    WHERE crear_recordatorio_cosecha = 1
+    AND fecha_cosecha_estimada IS NOT NULL
+    AND dias_anticipacion_recordatorio IS NOT NULL;`
+);
+}

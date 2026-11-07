@@ -192,3 +192,14 @@ export async function toggleRecordatorio(id: string, activo: boolean): Promise<v
     [activo ? 1 : 0, Date.now(), id]
   );
 }
+
+//Consulta nuevas actividades con recordatorio
+export async function listarActividadesConRecordatorioActivo(): Promise<ActividadConCultivo[]> {
+  const db = await getDatabase();
+  return await db.getAllAsync<ActividadConCultivo>(
+    `SELECT A.*, C.nombre as cultivo_nombre
+     FROM ACTIVIDADES A
+     JOIN CULTIVOS C ON A.cultivo_id = C.id
+     WHERE A.crear_recordatorio = 1 AND A.dias_recordatorio IS NOT NULL;`
+  );
+}

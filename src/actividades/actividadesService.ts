@@ -1,5 +1,6 @@
 import { obtenerUsuario } from '@/auth/authRepository';
 import { obtenerCultivo } from '@/cultivos/cultivosService';
+import { sincronizarNotificaciones } from '@/shared/notifications/notificacionesService';
 import { Actividad, ActividadConCultivo, actualizarActividad, crearActividad, CrearActividadInput, eliminarActividad, listarActividadesPorCultivo, listarRecordatoriosActivos, listarTodasLasActividades, obtenerActividadPorId, obtenerRegistroCosecha, RegistroCosecha, toggleRecordatorio } from './actividadesRepository';
 export interface ActividadFormInput {
     cultivoId: string;
@@ -21,18 +22,20 @@ export interface ActividadResultado {
 
 export interface ActividadConCosecha extends Actividad { registroCosecha: RegistroCosecha | null;
     }
-
-    const DIAS_RECORDATORIO_POR_DEFECTO = 8;
-    const DIAS_RECORDATORIO_MAXIMO =365;
+    const DIAS_RECORDATORIO_MAXIMO = 365;
 
 
-  function validarDiasRecordatorio(dias: number | undefined): string | null {
-  if (dias === undefined) return null;
-  if (!Number.isInteger(dias) || dias < 1 || dias > DIAS_RECORDATORIO_MAXIMO) {
+  function validarDiasRecordatorio(dias: number | undefined ): string | null {
+  if (dias === undefined) {
+    return 'Indica cada cuántos días quieres que se repita el recordatorio.'
+  }
+   if(!Number.isInteger(dias) || dias < 1 || dias > DIAS_RECORDATORIO_MAXIMO) {
     return `Los días del recordatorio deben ser un número entre 1 y ${DIAS_RECORDATORIO_MAXIMO}.`;
   }
+
   return null;
 }
+
 
 //Listar las actividades de un cultivo (ingresa desde detalle)
 export async function listarActividadesDelCultivo(cultivoId: string ): Promise<Actividad[]> {
@@ -85,10 +88,12 @@ export async function registrarActividad(datos: ActividadFormInput): Promise<Act
     }
   }
 
-  // Si activa el recordatorio, valor por defecto de 8 días 
-  const diasRecordatorio = datos.crearRecordatorio
-    ? (datos.diasRecordatorio ?? 8)
-    : undefined;
+  // Si activa el recordatorio, debe ingresar cada cuantos días 
+  if (datos.crearRecordatorio) {
+  const errorDias = validarDiasRecordatorio(datos.diasRecordatorio);
+  if (errorDias) return { exito: false, error: errorDias };
+}
+const diasRecordatorio = datos.crearRecordatorio ? datos.diasRecordatorio : undefined;
 
   const input: CrearActividadInput = {
     cultivoId: datos.cultivoId,
@@ -103,8 +108,10 @@ export async function registrarActividad(datos: ActividadFormInput): Promise<Act
     categoria3Cantidad: datos.categoria3Cantidad,
   };
   const actividad = await crearActividad(input);
+  void sincronizarNotificaciones();
   return { exito: true, actividad };
 }
+
 // Edita una actividad existente
 export async function editarActividad(
   id: string,
@@ -112,11 +119,17 @@ export async function editarActividad(
 ): Promise<ActividadResultado> {
   if (datos.actividad !== undefined && !datos.actividad.trim()) {
     return { exito: false, error: 'Escribe qué actividad vas a registrar.' };
+  };
+
+  if(datos.crearRecordatorio){
+    const errorDias = validarDiasRecordatorio(datos.diasRecordatorio)
+      if (errorDias) return { exito: false, error: errorDias };
+    
   }
-  const diasRecordatorio = datos.crearRecordatorio
-    ? (datos.diasRecordatorio ?? 8)
+  const diasRecordatorio = datos.crearRecordatorio === true
+    ? (datos.diasRecordatorio)
     : datos.crearRecordatorio === false
-    ? undefined
+    ? null
     : datos.diasRecordatorio;
     
   await actualizarActividad(id, {
@@ -133,12 +146,14 @@ export async function editarActividad(
   });
 
   const actividadActualizada = await obtenerActividadPorId(id);
+  void sincronizarNotificaciones();
   return { exito: true, actividad: actividadActualizada ?? undefined };
 }
 
 //Elimina una actividad y su registro de cosecha si existe
 export async function borrarActividad(id: string): Promise<ActividadResultado> {
   await eliminarActividad(id);
+  void sincronizarNotificaciones();
   return { exito: true };
 }
 
@@ -149,6 +164,7 @@ export async function cambiarEstadoRecordatorio(
 ): Promise<ActividadResultado> {
   await toggleRecordatorio(id, activo);
   const actividad = await obtenerActividadPorId(id);
+  void sincronizarNotificaciones
   return { exito: true, actividad: actividad ?? undefined };
 }
 

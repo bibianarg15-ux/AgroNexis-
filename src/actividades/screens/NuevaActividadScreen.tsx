@@ -3,6 +3,8 @@ import { listarCultivosDelUsuario, obtenerCultivo } from '@/cultivos/cultivosSer
 import DateInput from '@/shared/components/DateInput';
 import ScreenHeader from '@/shared/components/ScreenHeader';
 import { useFeedback } from '@/shared/feedback/feedbackProvider';
+import { sincronizarNotificaciones } from '@/shared/notifications/notificacionesService';
+import { usePermisoNotificaciones } from '@/shared/notifications/usePermisoNotificaciones ';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -12,6 +14,7 @@ export default function NuevaActividadScreen() {
   const router = useRouter();
   const { cultivoId: cultivoIdParam } = useLocalSearchParams<{ cultivoId?: string }>();
   const {mostrarAdvertencia, mostrarError,mostrarExito} = useFeedback();
+  const pedirPermiso = usePermisoNotificaciones();
 
   const [cultivoSeleccionado, setCultivoSeleccionado] = useState<Cultivo | null>(null);
   const [cultivosDisponibles, setCultivosDisponibles] = useState<Cultivo[]>([]);
@@ -20,7 +23,7 @@ export default function NuevaActividadScreen() {
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
   const [observaciones, setObservaciones] = useState('');
   const [crearRecordatorio, setCrearRecordatorio] = useState(false);
-  const [diasRecordatorio, setDiasRecordatorio] = useState('8');
+  const [diasRecordatorio, setDiasRecordatorio] = useState('');
   const [cantidad1, setCantidad1] = useState('');
   const [cantidad2, setCantidad2] = useState('');
   const [cantidad3, setCantidad3] = useState('');
@@ -45,9 +48,15 @@ export default function NuevaActividadScreen() {
       return;
     }
 
-    mostrarExito('Actividad guardada')
+ if (crearRecordatorio) {
+    const dias = Number(diasRecordatorio);
 
-    setCargando(true);
+    if (!diasRecordatorio || !Number.isInteger(dias) || dias < 1 || dias > 365) {
+      mostrarAdvertencia('Escribe un número de días entre 1 y 365 para el recordatorio.');
+      return;
+    }
+ }
+setCargando(true);
 
     const resultado = await registrarActividad({
       cultivoId: cultivoSeleccionado.id,
@@ -61,14 +70,19 @@ export default function NuevaActividadScreen() {
       categoria2Cantidad: cantidad2 ? Number(cantidad2) : 0,
       categoria3Cantidad: cantidad3 ? Number(cantidad3) : 0,
     });
-
+    
     setCargando(false);
 
     if (!resultado.exito) {
       mostrarError(resultado.error ?? 'No se pudo guardar la actividad.');
       return;
     }
-
+    
+    if(crearRecordatorio) {
+      await sincronizarNotificaciones();
+    }
+    mostrarExito('Actividad guardada correctamente.');
+    
     router.back();
   }
 
@@ -187,24 +201,32 @@ export default function NuevaActividadScreen() {
         )}
 
         <View style={styles.filaToggle}>
+
           <Text style={styles.label}>¿Crear recordatorio?</Text>
           <Switch
             value={crearRecordatorio}
-            onValueChange={setCrearRecordatorio}
+            onValueChange = { async (activo) => {setCrearRecordatorio(activo);
+              if(activo) await pedirPermiso();
+            }}
             disabled={cargando}
           />
         </View>
-
-        {crearRecordatorio && (
+        { crearRecordatorio && (
           <>
             <Text style={styles.label}>Repetir cada (días)</Text>
             <TextInput
               style={styles.input}
+              placeholder='8'
               value={diasRecordatorio}
-              onChangeText={setDiasRecordatorio}
+              onChangeText= {(t)=> setDiasRecordatorio(t.replace(/[^0-9]/g, ''))}
               keyboardType="numeric"
               editable={!cargando}
             />
+             <Text style={styles.ayuda}>
+      {diasRecordatorio
+        ? `Te recordaremos esta actividad cada ${diasRecordatorio} días.`
+        : 'Escribe cada cuántos días quieres recibir el recordatorio.'}
+    </Text>
           </>
         )}
 
@@ -276,4 +298,5 @@ const styles = StyleSheet.create({
     height: 52,
   },
   botonTexto: { color: '#ffffff', fontWeight: 'bold', fontSize: 18 },
+ayuda: {fontSize: 14, color: '#000000'},
 });
